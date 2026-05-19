@@ -1,0 +1,178 @@
+import React, { useState } from 'react';
+
+const communityData = {
+  week: [
+    { rank: 1, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 842, change: 2, badges: ['Top Contributor', 'Helpful Peer'] },
+    { rank: 2, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 780, change: 0, badges: ['Top Contributor'] },
+    { rank: 3, name: 'Sneha Gupta', batch: 'PGP BA · Cohort 38', initials: 'SG', color: '#EC4899', points: 715, change: 3, badges: ['Helpful Peer'] },
+    { rank: 4, name: 'Rohan Mehta', batch: 'PGPDSAI · Cohort 42', initials: 'RM', color: '#6366F1', points: 698, change: -1, badges: ['Study Streak'] },
+    { rank: 5, name: 'Divya Krishnan', batch: 'PGP DE · Cohort 35', initials: 'DK', color: '#0EA5E9', points: 650, change: 1, badges: ['Top Contributor'] },
+    { rank: 6, name: 'Amit Verma', batch: 'PGP BA · Cohort 38', initials: 'AV', color: '#14B8A6', points: 612, change: -2, badges: [] },
+    { rank: 7, name: 'Kiran Reddy', batch: 'PGPDSAI · Cohort 42', initials: 'KI', color: '#F59E0B', points: 590, change: 4, badges: ['Helpful Peer'] },
+    { rank: 8, name: 'Meera Joshi', batch: 'PGP BA · Cohort 38', initials: 'ME', color: '#10B981', points: 548, change: 0, badges: [] },
+    { rank: 9, name: 'Aarav Singh', batch: 'PGP DE · Cohort 35', initials: 'AS', color: '#EF4444', points: 510, change: -1, badges: [] },
+    { rank: 10, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 485, change: 3, badges: ['Project Star'] },
+  ],
+  month: [
+    { rank: 1, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 3240, change: 0, badges: ['Top Contributor', 'Helpful Peer'] },
+    { rank: 2, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 3100, change: 1, badges: ['Top Contributor'] },
+    { rank: 3, name: 'Divya Krishnan', batch: 'PGP DE · Cohort 35', initials: 'DK', color: '#0EA5E9', points: 2880, change: -1, badges: ['Study Streak'] },
+    { rank: 4, name: 'Sneha Gupta', batch: 'PGP BA · Cohort 38', initials: 'SG', color: '#EC4899', points: 2750, change: 2, badges: ['Helpful Peer'] },
+    { rank: 5, name: 'Rohan Mehta', batch: 'PGPDSAI · Cohort 42', initials: 'RM', color: '#6366F1', points: 2600, change: 0, badges: [] },
+    { rank: 6, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 2480, change: 3, badges: ['Project Star'] },
+    { rank: 7, name: 'Kiran Reddy', batch: 'PGPDSAI · Cohort 42', initials: 'KI', color: '#F59E0B', points: 2350, change: -2, badges: [] },
+    { rank: 8, name: 'Meera Joshi', batch: 'PGP BA · Cohort 38', initials: 'ME', color: '#10B981', points: 2200, change: 1, badges: [] },
+  ],
+  all: [
+    { rank: 1, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 12480, change: 0, badges: ['Top Contributor', 'Helpful Peer'] },
+    { rank: 2, name: 'Divya Krishnan', batch: 'PGP DE · Cohort 35', initials: 'DK', color: '#0EA5E9', points: 11200, change: 0, badges: ['Top Contributor', 'Study Streak'] },
+    { rank: 3, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 10850, change: 1, badges: ['Helpful Peer'] },
+    { rank: 4, name: 'Sneha Gupta', batch: 'PGP BA · Cohort 38', initials: 'SG', color: '#EC4899', points: 9400, change: -1, badges: ['Helpful Peer'] },
+    { rank: 5, name: 'Rohan Mehta', batch: 'PGPDSAI · Cohort 42', initials: 'RM', color: '#6366F1', points: 8900, change: 0, badges: ['Project Star'] },
+    { rank: 6, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 7600, change: 2, badges: ['Project Star'] },
+  ],
+};
+
+const cohortData = {
+  week: [
+    { rank: 1, name: 'Vikram Patel', batch: 'PGPDSAI · Cohort 42', initials: 'VP', color: '#8B5CF6', points: 560, change: 1, badges: ['Project Star'], star: true },
+    { rank: 2, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 540, change: -1, badges: ['Never Miss a Class'], star: true },
+    { rank: 3, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 520, change: 0, badges: ['Study Streak'], star: true },
+    { rank: 4, name: 'Kiran Reddy', batch: 'PGPDSAI · Cohort 42', initials: 'KI', color: '#F59E0B', points: 480, change: 2, badges: [] },
+    { rank: 5, name: 'Rohan Mehta', batch: 'PGPDSAI · Cohort 42', initials: 'RM', color: '#6366F1', points: 460, change: -1, badges: [] },
+    { rank: 6, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 440, change: 1, badges: ['Project Star'] },
+    { rank: 7, name: 'Amit Desai', batch: 'PGPDSAI · Cohort 42', initials: 'AD', color: '#10B981', points: 410, change: 0, badges: [] },
+    { rank: 8, name: 'Neha Kumar', batch: 'PGPDSAI · Cohort 42', initials: 'NK', color: '#EC4899', points: 385, change: -2, badges: [] },
+  ],
+  month: [
+    { rank: 1, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 2100, change: 0, badges: ['Never Miss a Class'], star: true },
+    { rank: 2, name: 'Vikram Patel', batch: 'PGPDSAI · Cohort 42', initials: 'VP', color: '#8B5CF6', points: 1980, change: 1, badges: ['Project Star'], star: true },
+    { rank: 3, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 1860, change: -1, badges: ['Study Streak'], star: true },
+    { rank: 4, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 1750, change: 2, badges: [] },
+    { rank: 5, name: 'Kiran Reddy', batch: 'PGPDSAI · Cohort 42', initials: 'KI', color: '#F59E0B', points: 1680, change: 0, badges: [] },
+    { rank: 6, name: 'Rohan Mehta', batch: 'PGPDSAI · Cohort 42', initials: 'RM', color: '#6366F1', points: 1590, change: -1, badges: [] },
+  ],
+  all: [
+    { rank: 1, name: 'Priya Nair', batch: 'PGPDSAI · Cohort 42', initials: 'PR', color: '#2563EB', points: 8400, change: 0, badges: ['Never Miss a Class', 'Project Star'] },
+    { rank: 2, name: 'Vikram Patel', batch: 'PGPDSAI · Cohort 42', initials: 'VP', color: '#8B5CF6', points: 7900, change: 0, badges: ['Project Star'] },
+    { rank: 3, name: 'Nisha Sharma', batch: 'PGPDSAI · Cohort 42', initials: 'NS', color: '#A855F7', points: 7600, change: 1, badges: ['Study Streak'] },
+    { rank: 4, name: 'Kiran Reddy', batch: 'PGPDSAI · Cohort 42', initials: 'KI', color: '#F59E0B', points: 6800, change: -1, badges: [] },
+    { rank: 5, name: 'Rahul Agarwal', batch: 'PGPDSAI · Cohort 42', initials: 'RA', color: '#4F46E5', points: 6200, change: 2, badges: ['Project Star'] },
+  ],
+};
+
+const badgeIcons = {
+  'Top Contributor': 'forum',
+  'Helpful Peer': 'thumb_up',
+  'Project Star': 'star',
+  'Study Streak': 'local_fire_department',
+  'Never Miss a Class': 'event_available',
+  'Alumni Approved': 'verified',
+};
+
+const badgeColors = {
+  'Top Contributor': '#4F46E5',
+  'Helpful Peer': '#2563EB',
+  'Project Star': '#F59E0B',
+  'Study Streak': '#EF4444',
+  'Never Miss a Class': '#10B981',
+  'Alumni Approved': '#8B5CF6',
+};
+
+export default function Leaderboard() {
+  const [board, setBoard] = useState('community');
+  const [timeFilter, setTimeFilter] = useState('week');
+
+  const data = board === 'community' ? communityData : cohortData;
+  const list = data[timeFilter] || data.week;
+
+  return (
+    <section className="page active" id="page-leaderboard">
+      <div className="page-header">
+        <h1>Leaderboard</h1>
+        <p className="page-subtitle">{board === 'community' ? 'Top contributors across all programs' : 'PG Program in Data Science & AI — Cohort 42'}</p>
+      </div>
+
+      {/* Board Switcher */}
+      <div className="lb-switcher">
+        <button className={`lb-switch-btn ${board === 'community' ? 'active' : ''}`} onClick={() => { setBoard('community'); setTimeFilter('week'); }}>
+          <span className="material-icons-round" style={{ fontSize: 18 }}>public</span> Community
+        </button>
+        <button className={`lb-switch-btn ${board === 'cohort' ? 'active' : ''}`} onClick={() => { setBoard('cohort'); setTimeFilter('week'); }}>
+          <span className="material-icons-round" style={{ fontSize: 18 }}>school</span> Cohort
+        </button>
+      </div>
+
+      {/* Time Filters */}
+      <div className="feed-filters" style={{ marginBottom: 24 }}>
+        {['week', 'month', 'all'].map(f => (
+          <button key={f} className={`filter-chip ${timeFilter === f ? 'active' : ''}`} onClick={() => setTimeFilter(f)}>
+            {f === 'week' ? 'This Week' : f === 'month' ? 'This Month' : 'All Time'}
+          </button>
+        ))}
+      </div>
+
+      {/* Info Banner */}
+      <div className="lb-info">
+        <span className="material-icons-round" style={{ fontSize: 16 }}>info_outline</span>
+        {board === 'community'
+          ? 'Points from discussions, liked replies, shared resources, study room hours, and AMA sessions.'
+          : 'Points from assignments, project quality, module discussions, attendance, and course progress.'}
+      </div>
+
+      {/* Leaderboard Table */}
+      <div className="lb-list">
+        {list.map((s, i) => {
+          const isMe = s.initials === 'RA';
+          const isTop3 = s.rank <= 3;
+          return (
+            <div key={i} className={`lb-row ${isMe ? 'me' : ''} ${isTop3 ? 'top3' : ''} ${s.star && board === 'cohort' && timeFilter !== 'all' ? 'star' : ''}`}>
+              {/* Rank */}
+              <div className="lb-rank">
+                {isTop3 ? (
+                  <span className={`lb-medal rank-${s.rank}`}>
+                    {s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉'}
+                  </span>
+                ) : (
+                  <span className="lb-rank-num">{s.rank}</span>
+                )}
+              </div>
+
+              {/* Avatar */}
+              <div className="lb-avatar" style={{ background: s.color }}>{s.initials}</div>
+
+              {/* Info */}
+              <div className="lb-info-col">
+                <span className="lb-name">
+                  {s.name}
+                  {isMe && <span className="lb-you-tag">You</span>}
+                  {s.star && board === 'cohort' && timeFilter !== 'all' && <span className="lb-star-tag">⭐ This Week's Star</span>}
+                </span>
+                <span className="lb-batch">{s.batch}</span>
+              </div>
+
+              {/* Badges */}
+              <div className="lb-badges">
+                {s.badges.slice(0, 2).map((b, j) => (
+                  <span key={j} className="lb-badge-mini" title={b} style={{ color: badgeColors[b] || '#6B7280' }}>
+                    <span className="material-icons-round">{badgeIcons[b] || 'emoji_events'}</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Points */}
+              <div className="lb-points">{s.points.toLocaleString()} <span className="lb-pts-label">pts</span></div>
+
+              {/* Change */}
+              <div className="lb-change">
+                {s.change > 0 && <span className="lb-up"><span className="material-icons-round">arrow_upward</span>{s.change}</span>}
+                {s.change < 0 && <span className="lb-down"><span className="material-icons-round">arrow_downward</span>{Math.abs(s.change)}</span>}
+                {s.change === 0 && <span className="lb-same">—</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
