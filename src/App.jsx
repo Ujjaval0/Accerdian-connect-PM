@@ -5,7 +5,7 @@ import AIFloatingAssistant from './components/AIFloatingAssistant';
 import Dashboard from './pages/Dashboard';
 import Community from './pages/Community';
 import Course from './pages/Course';
-import StudyRooms from './pages/StudyRooms';
+import StudyRooms from './pages/Studyrooms';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
 import Referrals from './pages/Referrals';
