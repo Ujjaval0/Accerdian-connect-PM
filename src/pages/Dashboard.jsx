@@ -1,7 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PROFILE_AVATAR } from '../aiAssistantData';
 
 export default function Dashboard() {
+  const [viewMode, setViewMode] = useState('list'); // 'list' | 'calendar'
+  const [selectedDate, setSelectedDate] = useState(20);
+
+  const calendarEvents = {
+    20: { title: 'Live Class — Neural Networks', time: '7:00 PM IST', tag: 'Live', type: 'live' },
+    22: { title: 'Mentor Session — Dr. Priya Sharma', time: '5:30 PM IST', tag: 'Mentor', type: 'mentor' },
+    25: { title: 'Alumni AMA — Career in Data Science', time: '6:00 PM IST', tag: 'AMA', type: 'alumni' }
+  };
+
+  const toggleBtnStyle = (isActive) => ({
+    background: isActive ? 'white' : 'transparent',
+    border: 'none',
+    color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+    padding: '6px 10px',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+    transition: 'all 0.2s',
+  });
+
+  const aprilDays = [26, 27, 28, 29, 30];
+  const mayDays = Array.from({ length: 31 }, (_, i) => i + 1);
+  const juneDays = [1, 2, 3, 4, 5, 6];
+
   return (
     <section className="page active" id="page-dashboard">
       
@@ -51,35 +78,145 @@ export default function Dashboard() {
       <div className="dash-grid">
         {/* Upcoming Events (Moved from below) */}
         <div className="dash-card" id="eventsCard">
-          <div className="card-header">
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3><span className="material-icons-round">event</span> Upcoming Events</h3>
-          </div>
-          <div className="events-list" id="eventsList">
-            <div className="event-item">
-              <div className="event-date"><span className="event-day">20</span><span className="event-month">May</span></div>
-              <div className="event-info">
-                <span className="event-title">Live Class — Neural Networks</span>
-                <span className="event-time"><span className="material-icons-round">schedule</span> 7:00 PM IST</span>
-              </div>
-              <span className="event-tag live">Live</span>
-            </div>
-            <div className="event-item">
-              <div className="event-date"><span className="event-day">22</span><span className="event-month">May</span></div>
-              <div className="event-info">
-                <span className="event-title">Mentor Session — Dr. Priya Sharma</span>
-                <span className="event-time"><span className="material-icons-round">schedule</span> 5:30 PM IST</span>
-              </div>
-              <span className="event-tag mentor">Mentor</span>
-            </div>
-            <div className="event-item">
-              <div className="event-date"><span className="event-day">25</span><span className="event-month">May</span></div>
-              <div className="event-info">
-                <span className="event-title">Alumni AMA — Career in Data Science</span>
-                <span className="event-time"><span className="material-icons-round">schedule</span> 6:00 PM IST</span>
-              </div>
-              <span className="event-tag alumni">AMA</span>
+            <div className="calendar-toggle-group" style={{ display: 'flex', gap: '4px', background: '#F1F5F9', padding: '3px', borderRadius: '8px' }}>
+              <button 
+                type="button"
+                className={`cal-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+                style={toggleBtnStyle(viewMode === 'list')}
+                title="List View"
+              >
+                <span className="material-icons-round" style={{ fontSize: '18px' }}>list</span>
+              </button>
+              <button 
+                type="button"
+                className={`cal-toggle-btn ${viewMode === 'calendar' ? 'active' : ''}`}
+                onClick={() => setViewMode('calendar')}
+                style={toggleBtnStyle(viewMode === 'calendar')}
+                title="Calendar View"
+              >
+                <span className="material-icons-round" style={{ fontSize: '18px' }}>calendar_month</span>
+              </button>
             </div>
           </div>
+          
+          {viewMode === 'list' ? (
+            <div className="events-list" id="eventsList">
+              <div className="event-item">
+                <div className="event-date"><span className="event-day">20</span><span className="event-month">May</span></div>
+                <div className="event-info">
+                  <span className="event-title">Live Class — Neural Networks</span>
+                  <span className="event-time"><span className="material-icons-round">schedule</span> 7:00 PM IST</span>
+                </div>
+                <span className="event-tag live">Live</span>
+              </div>
+              <div className="event-item">
+                <div className="event-date"><span className="event-day">22</span><span className="event-month">May</span></div>
+                <div className="event-info">
+                  <span className="event-title">Mentor Session — Dr. Priya Sharma</span>
+                  <span className="event-time"><span className="material-icons-round">schedule</span> 5:30 PM IST</span>
+                </div>
+                <span className="event-tag mentor">Mentor</span>
+              </div>
+              <div className="event-item">
+                <div className="event-date"><span className="event-day">25</span><span className="event-month">May</span></div>
+                <div className="event-info">
+                  <span className="event-title">Alumni AMA — Career in Data Science</span>
+                  <span className="event-time"><span className="material-icons-round">schedule</span> 6:00 PM IST</span>
+                </div>
+                <span className="event-tag alumni">AMA</span>
+              </div>
+            </div>
+          ) : (
+            <div className="calendar-view" style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-main)' }}>May 2026</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>* Click date to view event</span>
+              </div>
+              
+              <div className="cal-grid-header">
+                <div>Su</div>
+                <div>Mo</div>
+                <div>Tu</div>
+                <div>We</div>
+                <div>Th</div>
+                <div>Fr</div>
+                <div>Sa</div>
+              </div>
+              
+              <div className="cal-grid-body">
+                {aprilDays.map((d, i) => (
+                  <div key={`apr-${i}`} className="cal-cell muted">{d}</div>
+                ))}
+                
+                {mayDays.map((d) => {
+                  const hasEv = calendarEvents[d];
+                  const isSel = selectedDate === d;
+                  return (
+                    <div 
+                      key={`may-${d}`} 
+                      className={`cal-cell ${hasEv ? 'has-event' : ''} ${isSel ? 'selected' : ''}`}
+                      onClick={() => hasEv && setSelectedDate(d)}
+                    >
+                      {d}
+                      {hasEv && (
+                        <span className={`cal-event-dot ${hasEv.type}`}></span>
+                      )}
+                    </div>
+                  );
+                })}
+                
+                {juneDays.map((d, i) => (
+                  <div key={`jun-${i}`} className="cal-cell muted">{d}</div>
+                ))}
+              </div>
+
+              {calendarEvents[selectedDate] && (
+                <div className="selected-event-detail" style={{
+                  marginTop: '12px',
+                  padding: '12px',
+                  background: 'rgba(79, 70, 229, 0.04)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(79, 70, 229, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  animation: 'fadeIn 0.2s ease'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      background: calendarEvents[selectedDate].type === 'live' ? 'var(--primary)' : calendarEvents[selectedDate].type === 'mentor' ? 'var(--success)' : '#8B5CF6',
+                      color: 'white',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <span className="material-icons-round" style={{ fontSize: '18px' }}>
+                        {calendarEvents[selectedDate].type === 'live' ? 'video_camera_front' : calendarEvents[selectedDate].type === 'mentor' ? 'person' : 'forum'}
+                      </span>
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {calendarEvents[selectedDate].title}
+                      </h4>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                        <span className="material-icons-round" style={{ fontSize: '12px' }}>schedule</span> {calendarEvents[selectedDate].time}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`event-tag ${calendarEvents[selectedDate].type}`} style={{ flexShrink: 0, fontSize: '9px' }}>
+                    {calendarEvents[selectedDate].tag}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Pending Tasks */}

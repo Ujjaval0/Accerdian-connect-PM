@@ -86,56 +86,182 @@ export default function Leaderboard() {
   const data = board === 'community' ? communityData : cohortData;
   const list = data[timeFilter] || data.week;
 
+  // Split into Top 3 and remaining
+  const top1 = list.find(s => s.rank === 1);
+  const top2 = list.find(s => s.rank === 2);
+  const top3 = list.find(s => s.rank === 3);
+  const remaining = list.filter(s => s.rank > 3);
+
+  // Find user's stats
+  const myStats = list.find(s => s.initials === 'RA') || {
+    rank: 6,
+    name: 'Rahul Agarwal',
+    points: board === 'cohort' ? 440 : (timeFilter === 'week' ? 485 : (timeFilter === 'month' ? 2480 : 7600)),
+    change: board === 'cohort' ? 1 : 3,
+    badges: ['Project Star'],
+    batch: 'PGPDSAI · Cohort 42'
+  };
+
   return (
-    <section className="page active" id="page-leaderboard">
+    <section className="page active" id="page-leaderboard" style={{ paddingBottom: 40 }}>
       <div className="page-header">
         <h1>Leaderboard</h1>
-        <p className="page-subtitle">{board === 'community' ? 'Top contributors across all programs' : 'PG Program in Data Science & AI — Cohort 42'}</p>
+        <p className="page-subtitle">{board === 'community' ? 'Top contributors across all Accredian programs' : 'PG Program in Data Science & AI — Cohort 42'}</p>
       </div>
 
-      {/* Board Switcher */}
-      <div className="lb-switcher">
-        <button className={`lb-switch-btn ${board === 'community' ? 'active' : ''}`} onClick={() => { setBoard('community'); setTimeFilter('week'); }}>
-          <span className="material-icons-round" style={{ fontSize: 18 }}>public</span> Community
-        </button>
-        <button className={`lb-switch-btn ${board === 'cohort' ? 'active' : ''}`} onClick={() => { setBoard('cohort'); setTimeFilter('week'); }}>
-          <span className="material-icons-round" style={{ fontSize: 18 }}>school</span> Cohort
-        </button>
-      </div>
-
-      {/* Time Filters */}
-      <div className="feed-filters" style={{ marginBottom: 24 }}>
-        {['week', 'month', 'all'].map(f => (
-          <button key={f} className={`filter-chip ${timeFilter === f ? 'active' : ''}`} onClick={() => setTimeFilter(f)}>
-            {f === 'week' ? 'This Week' : f === 'month' ? 'This Month' : 'All Time'}
+      {/* Control Panel Grid */}
+      <div className="lb-controls-container">
+        {/* Board Switcher */}
+        <div className="lb-switcher">
+          <button className={`lb-switch-btn ${board === 'community' ? 'active' : ''}`} onClick={() => { setBoard('community'); setTimeFilter('week'); }}>
+            <span className="material-icons-round" style={{ fontSize: 18 }}>public</span> Global Community
           </button>
-        ))}
+          <button className={`lb-switch-btn ${board === 'cohort' ? 'active' : ''}`} onClick={() => { setBoard('cohort'); setTimeFilter('week'); }}>
+            <span className="material-icons-round" style={{ fontSize: 18 }}>school</span> Cohort Classroom
+          </button>
+        </div>
+
+        {/* Time Filters */}
+        <div className="feed-filters" style={{ margin: 0 }}>
+          {['week', 'month', 'all'].map(f => (
+            <button key={f} className={`filter-chip ${timeFilter === f ? 'active' : ''}`} onClick={() => setTimeFilter(f)}>
+              {f === 'week' ? 'This Week' : f === 'month' ? 'This Month' : 'All Time'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reward Progress Bar Section */}
+      <div className="lb-rewards-overview">
+        <div className="lb-reward-summary-card">
+          <div className="lb-reward-icon">
+            <span className="material-icons-round">emoji_events</span>
+          </div>
+          <div className="lb-reward-info">
+            <span className="lb-reward-title">Your Rank Standing</span>
+            <div className="lb-reward-row">
+              <div className="lb-reward-stat">
+                <span className="label">Rank</span>
+                <span className="value">#{myStats.rank}</span>
+              </div>
+              <div className="lb-reward-divider"></div>
+              <div className="lb-reward-stat">
+                <span className="label">Total Points</span>
+                <span className="value">{myStats.points.toLocaleString()} <span className="pts-suffix">pts</span></span>
+              </div>
+              <div className="lb-reward-divider"></div>
+              <div className="lb-reward-stat">
+                <span className="label">Streak Bonus</span>
+                <span className="value-streak">
+                  <span className="material-icons-round">local_fire_department</span> +15%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="lb-reward-progress-card">
+          <div className="lb-reward-progress-header">
+            <span>Next Reward Milestone</span>
+            <span className="progress-percent">
+              {board === 'cohort' ? 'Level 2: Certified Expert' : 'Level 2: Community Contributor'}
+            </span>
+          </div>
+          <div className="lb-progress-bar-container">
+            <div className="lb-progress-bar" style={{ width: `${Math.min(100, Math.max(30, (myStats.points / (board === 'cohort' ? 1000 : (timeFilter === 'week' ? 1000 : (timeFilter === 'month' ? 4000 : 15000)))) * 100))}%` }}></div>
+          </div>
+          <div className="lb-reward-progress-footer">
+            <span>{myStats.points.toLocaleString()} pts / {(board === 'cohort' ? 1000 : (timeFilter === 'week' ? 1000 : (timeFilter === 'month' ? 4000 : 15000))).toLocaleString()} pts</span>
+            <span>Unlocked at next milestone</span>
+          </div>
+        </div>
       </div>
 
       {/* Info Banner */}
       <div className="lb-info">
         <span className="material-icons-round" style={{ fontSize: 16 }}>info_outline</span>
         {board === 'community'
-          ? 'Points from discussions, liked replies, shared resources, study room hours, and AMA sessions.'
-          : 'Points from assignments, project quality, module discussions, attendance, and course progress.'}
+          ? 'Points from community discussions, answered replies, shared notes/files, study room hours, and AMA session participation.'
+          : 'Points from assignment submissions, project grades, module discussions, class attendance, and curriculum progression.'}
       </div>
 
-      {/* Leaderboard Table */}
+      {/* Visual Podium for Top 3 */}
+      <div className="lb-podium">
+        {/* 2nd Place */}
+        {top2 && (
+          <div className="lb-podium-card rank-2">
+            <div className="lb-podium-crown">🥈</div>
+            <div className="lb-podium-avatar-wrapper">
+              <div className="lb-podium-avatar" style={{ background: top2.color }}>
+                {top2.initials}
+              </div>
+              <div className="lb-podium-rank-badge">2</div>
+            </div>
+            <h3 className="lb-podium-name">{top2.name}</h3>
+            <span className="lb-podium-batch">{top2.batch.split('·')[0]}</span>
+            <div className="lb-podium-points">{top2.points.toLocaleString()} <span className="pts">pts</span></div>
+            {top2.badges.length > 0 && (
+              <span className="lb-podium-badge-tag">{top2.badges[0]}</span>
+            )}
+          </div>
+        )}
+
+        {/* 1st Place */}
+        {top1 && (
+          <div className="lb-podium-card rank-1">
+            <div className="lb-podium-crown">👑</div>
+            <div className="lb-podium-avatar-wrapper">
+              <div className="lb-podium-avatar" style={{ background: top1.color }}>
+                {top1.initials}
+              </div>
+              <div className="lb-podium-rank-badge">1</div>
+            </div>
+            <h3 className="lb-podium-name">{top1.name}</h3>
+            <span className="lb-podium-batch">{top1.batch.split('·')[0]}</span>
+            <div className="lb-podium-points">{top1.points.toLocaleString()} <span className="pts">pts</span></div>
+            {top1.badges.length > 0 && (
+              <span className="lb-podium-badge-tag active">{top1.badges[0]}</span>
+            )}
+          </div>
+        )}
+
+        {/* 3rd Place */}
+        {top3 && (
+          <div className="lb-podium-card rank-3">
+            <div className="lb-podium-crown">🥉</div>
+            <div className="lb-podium-avatar-wrapper">
+              <div className="lb-podium-avatar" style={{ background: top3.color }}>
+                {top3.initials}
+              </div>
+              <div className="lb-podium-rank-badge">3</div>
+            </div>
+            <h3 className="lb-podium-name">{top3.name}</h3>
+            <span className="lb-podium-batch">{top3.batch.split('·')[0]}</span>
+            <div className="lb-podium-points">{top3.points.toLocaleString()} <span className="pts">pts</span></div>
+            {top3.badges.length > 0 && (
+              <span className="lb-podium-badge-tag">{top3.badges[0]}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Leaderboard Table List */}
+      <div className="lb-list-header">
+        <span style={{ width: 36, textAlign: 'center' }}>Rank</span>
+        <span style={{ flex: 1, paddingLeft: 52 }}>Student</span>
+        <span className="lb-header-badges" style={{ width: 120, textAlign: 'left' }}>Specialization Badge</span>
+        <span style={{ width: 90, textAlign: 'right' }}>Score</span>
+        <span style={{ width: 48, textAlign: 'center' }}>Change</span>
+      </div>
+
       <div className="lb-list">
-        {list.map((s, i) => {
+        {remaining.map((s, i) => {
           const isMe = s.initials === 'RA';
-          const isTop3 = s.rank <= 3;
           return (
-            <div key={i} className={`lb-row ${isMe ? 'me' : ''} ${isTop3 ? 'top3' : ''} ${s.star && board === 'cohort' && timeFilter !== 'all' ? 'star' : ''}`}>
+            <div key={i} className={`lb-row ${isMe ? 'me' : ''} ${s.star && board === 'cohort' && timeFilter !== 'all' ? 'star' : ''}`}>
               {/* Rank */}
               <div className="lb-rank">
-                {isTop3 ? (
-                  <span className={`lb-medal rank-${s.rank}`}>
-                    {s.rank === 1 ? '🥇' : s.rank === 2 ? '🥈' : '🥉'}
-                  </span>
-                ) : (
-                  <span className="lb-rank-num">{s.rank}</span>
-                )}
+                <span className="lb-rank-num">{s.rank}</span>
               </div>
 
               {/* Avatar */}
@@ -146,18 +272,25 @@ export default function Leaderboard() {
                 <span className="lb-name">
                   {s.name}
                   {isMe && <span className="lb-you-tag">You</span>}
-                  {s.star && board === 'cohort' && timeFilter !== 'all' && <span className="lb-star-tag">⭐ This Week's Star</span>}
+                  {s.star && board === 'cohort' && timeFilter !== 'all' && <span className="lb-star-tag">⭐ Week's Star</span>}
                 </span>
                 <span className="lb-batch">{s.batch}</span>
               </div>
 
               {/* Badges */}
               <div className="lb-badges">
-                {s.badges.slice(0, 2).map((b, j) => (
-                  <span key={j} className="lb-badge-mini" title={b} style={{ color: badgeColors[b] || '#6B7280' }}>
-                    <span className="material-icons-round">{badgeIcons[b] || 'emoji_events'}</span>
+                {s.badges.slice(0, 1).map((b, j) => (
+                  <span key={j} className="lb-badge-text-tag" style={{ border: `1px solid ${badgeColors[b]}22`, background: `${badgeColors[b]}0b`, color: badgeColors[b] }}>
+                    <span className="material-icons-round" style={{ fontSize: 13 }}>{badgeIcons[b] || 'emoji_events'}</span>
+                    {b}
                   </span>
                 ))}
+                {s.badges.length === 0 && (
+                  <span className="lb-badge-text-tag empty">
+                    <span className="material-icons-round" style={{ fontSize: 13 }}>workspace_premium</span>
+                    Aspiring Star
+                  </span>
+                )}
               </div>
 
               {/* Points */}
@@ -165,8 +298,8 @@ export default function Leaderboard() {
 
               {/* Change */}
               <div className="lb-change">
-                {s.change > 0 && <span className="lb-up"><span className="material-icons-round">arrow_upward</span>{s.change}</span>}
-                {s.change < 0 && <span className="lb-down"><span className="material-icons-round">arrow_downward</span>{Math.abs(s.change)}</span>}
+                {s.change > 0 && <span className="lb-up-pill"><span className="material-icons-round">arrow_upward</span>{s.change}</span>}
+                {s.change < 0 && <span className="lb-down-pill"><span className="material-icons-round">arrow_downward</span>{Math.abs(s.change)}</span>}
                 {s.change === 0 && <span className="lb-same">—</span>}
               </div>
             </div>

@@ -1,6 +1,45 @@
 import React from 'react';
 import { courseModules } from '../courseData';
 
+const renderAttachments = (attachments) => {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div className="post-attachments" onClick={e => e.stopPropagation()}>
+      {attachments.map((att) => {
+        if (att.type === 'image') {
+          return (
+            <img 
+              key={att.id || att.name} 
+              src={att.url} 
+              alt={att.name} 
+              className="post-image-attachment" 
+              onClick={() => window.open(att.url, '_blank')}
+            />
+          );
+        } else {
+          return (
+            <a 
+              key={att.id || att.name} 
+              href={att.url} 
+              download={att.name} 
+              className="post-file-attachment"
+            >
+              <div className="post-file-icon">
+                <span className="material-icons-round">description</span>
+              </div>
+              <div className="post-file-info">
+                <span className="post-file-name">{att.name}</span>
+                <span className="post-file-size">{att.size}</span>
+              </div>
+              <span className="material-icons-round post-file-download-icon">download</span>
+            </a>
+          );
+        }
+      })}
+    </div>
+  );
+};
+
 export default function ModuleDiscussionsTab({
   activeModule,
   activeModulePost,
@@ -18,6 +57,54 @@ export default function ModuleDiscussionsTab({
   renderPostCard,
   statusClass,
 }) {
+  const [newPostAttachments, setNewPostAttachments] = React.useState([]);
+  const [replyAttachments, setReplyAttachments] = React.useState([]);
+
+  const fileInputRef = React.useRef(null);
+  const imageInputRef = React.useRef(null);
+  const replyFileInputRef = React.useRef(null);
+  const replyImageInputRef = React.useRef(null);
+
+  const handleFileChange = (e, target) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    const newFiles = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' 
+        : (file.size / 1024).toFixed(1) + ' KB',
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      url: URL.createObjectURL(file)
+    }));
+    
+    if (target === 'post') {
+      setNewPostAttachments(prev => [...prev, ...newFiles]);
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => [...prev, ...newFiles]);
+    }
+    // reset input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (id, target) => {
+    if (target === 'post') {
+      setNewPostAttachments(prev => prev.filter(att => att.id !== id));
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => prev.filter(att => att.id !== id));
+    }
+  };
+
+  const onPostSubmit = () => {
+    handleModulePostSubmit(newPostAttachments);
+    setNewPostAttachments([]);
+  };
+
+  const onReplySubmit = () => {
+    handleModuleReplySubmit(replyAttachments);
+    setReplyAttachments([]);
+  };
   if (!activeModule) {
     return (
       <>
@@ -103,8 +190,56 @@ export default function ModuleDiscussionsTab({
             value={moduleReplyText}
             onChange={(e) => setModuleReplyText(e.target.value)}
           />
-          <div className="reply-actions">
-            <button className="btn-primary btn-sm" onClick={handleModuleReplySubmit}>
+          
+          <input 
+            type="file" 
+            ref={replyFileInputRef} 
+            style={{ display: 'none' }} 
+            onChange={(e) => handleFileChange(e, 'reply')}
+            multiple
+          />
+          <input 
+            type="file" 
+            ref={replyImageInputRef} 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+            onChange={(e) => handleFileChange(e, 'reply')}
+            multiple
+          />
+
+          {replyAttachments.length > 0 && (
+            <div style={{ margin: '0 16px 12px', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              {replyAttachments.map((att) => (
+                <div key={att.id} className="composer-attachment-item">
+                  {att.type === 'image' ? (
+                    <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                  ) : (
+                    <div className="composer-attachment-icon">
+                      <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                    </div>
+                  )}
+                  <div className="composer-attachment-info">
+                    <span className="composer-attachment-name">{att.name}</span>
+                    <span className="composer-attachment-size">{att.size}</span>
+                  </div>
+                  <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'reply')}>
+                    <span className="material-icons-round">close</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="reply-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="composer-btn" title="Attach file" onClick={() => replyFileInputRef.current.click()}>
+                <span className="material-icons-round" style={{ fontSize: 20 }}>attach_file</span>
+              </button>
+              <button className="composer-btn" title="Add image" onClick={() => replyImageInputRef.current.click()}>
+                <span className="material-icons-round" style={{ fontSize: 20 }}>image</span>
+              </button>
+            </div>
+            <button className="btn-primary btn-sm" onClick={onReplySubmit}>
               <span className="material-icons-round" style={{ fontSize: 16, marginRight: 4 }}>
                 send
               </span>{' '}
@@ -139,6 +274,7 @@ export default function ModuleDiscussionsTab({
                 </div>
                 <div className="post-content" style={{ marginLeft: 44, marginBottom: 0 }}>
                   {r.content}
+                  {renderAttachments(r.attachments)}
                 </div>
               </div>
             ))
@@ -291,13 +427,60 @@ export default function ModuleDiscussionsTab({
               placeholder={`Ask a question about ${activeModule.shortTitle}...`}
               value={moduleNewPostText}
               onChange={(e) => setModuleNewPostText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleModulePostSubmit()}
+              onKeyPress={(e) => e.key === 'Enter' && onPostSubmit()}
             />
             <div className="composer-actions">
-              <button className="btn-primary btn-sm" onClick={handleModulePostSubmit}>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button className="composer-btn" title="Attach file" onClick={() => fileInputRef.current.click()}>
+                  <span className="material-icons-round">attach_file</span>
+                </button>
+                <button className="composer-btn" title="Add image" onClick={() => imageInputRef.current.click()}>
+                  <span className="material-icons-round">image</span>
+                </button>
+              </div>
+              <button className="btn-primary btn-sm" onClick={onPostSubmit}>
                 Post
               </button>
             </div>
+
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={(e) => handleFileChange(e, 'post')}
+              multiple
+            />
+            <input 
+              type="file" 
+              ref={imageInputRef} 
+              accept="image/*" 
+              style={{ display: 'none' }} 
+              onChange={(e) => handleFileChange(e, 'post')}
+              multiple
+            />
+
+            {newPostAttachments.length > 0 && (
+              <div className="composer-attachments-preview">
+                {newPostAttachments.map((att) => (
+                  <div key={att.id} className="composer-attachment-item">
+                    {att.type === 'image' ? (
+                      <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                    ) : (
+                      <div className="composer-attachment-icon">
+                        <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                      </div>
+                    )}
+                    <div className="composer-attachment-info">
+                      <span className="composer-attachment-name">{att.name}</span>
+                      <span className="composer-attachment-size">{att.size}</span>
+                    </div>
+                    <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'post')}>
+                      <span className="material-icons-round">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="posts-feed">
             {moduleDiscussions.map((p) => (

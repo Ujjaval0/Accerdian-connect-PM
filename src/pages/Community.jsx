@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { dummyPosts } from '../data';
 
 const mentorsInit = [
@@ -20,17 +20,143 @@ const studentsInit = [
   { id: 's10', name: 'Nisha Sharma', initials: 'NS', course: 'PGPDSAI', cohort: 'Cohort 2025', color: '#A855F7', online: true, bio: 'Aspiring AI researcher. Currently working on an NLP capstone project.', skills: ['Python', 'HuggingFace', 'NLP', 'Transformers'], isFollowing: false, isFriend: false },
 ];
 
+const renderAttachments = (attachments) => {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div className="post-attachments" onClick={e => e.stopPropagation()}>
+      {attachments.map((att) => {
+        if (att.type === 'image') {
+          return (
+            <img 
+              key={att.id || att.name} 
+              src={att.url} 
+              alt={att.name} 
+              className="post-image-attachment" 
+              onClick={() => window.open(att.url, '_blank')}
+            />
+          );
+        } else {
+          return (
+            <a 
+              key={att.id || att.name} 
+              href={att.url} 
+              download={att.name} 
+              className="post-file-attachment"
+            >
+              <div className="post-file-icon">
+                <span className="material-icons-round">description</span>
+              </div>
+              <div className="post-file-info">
+                <span className="post-file-name">{att.name}</span>
+                <span className="post-file-size">{att.size}</span>
+              </div>
+              <span className="material-icons-round post-file-download-icon">download</span>
+            </a>
+          );
+        }
+      })}
+    </div>
+  );
+};
+
 export default function Community() {
   const [posts, setPosts] = useState(dummyPosts);
+  const [activeFilter, setActiveFilter] = useState('All');
+  
+  const getFilteredPosts = () => {
+    switch (activeFilter) {
+      case 'Mentor Posts':
+        return posts.filter(p => p.role === 'mentor');
+      case 'Trending':
+        return posts.filter(p => p.likes >= 50 || p.isTrending);
+      case 'Resources':
+        return posts.filter(p => 
+          (p.attachments && p.attachments.length > 0) || 
+          p.tags.some(t => t.toLowerCase().includes('resource') || t.toLowerCase().includes('notes') || t.toLowerCase().includes('sheet') || t.toLowerCase().includes('guide')) ||
+          p.badges.some(b => b.text.toLowerCase().includes('resource'))
+        );
+      case 'AMA Sessions':
+        return posts.filter(p => 
+          p.tags.some(t => t.toLowerCase().includes('ama')) || 
+          p.badges.some(b => b.text.toLowerCase().includes('ama'))
+        );
+      default:
+        return posts;
+    }
+  };
+
   const [activePost, setActivePost] = useState(null);
   const [newPostText, setNewPostText] = useState('');
   const [replyText, setReplyText] = useState('');
   const [profilePopup, setProfilePopup] = useState(null);
   const [mentors, setMentors] = useState(mentorsInit);
   const [students, setStudents] = useState(studentsInit);
+  
+  const [newPostAttachments, setNewPostAttachments] = useState([]);
+  const [replyAttachments, setReplyAttachments] = useState([]);
+
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const replyFileInputRef = useRef(null);
+  const replyImageInputRef = useRef(null);
+
+  React.useEffect(() => {
+    const handleOpenPost = (e) => {
+      const { postId } = e.detail;
+      const post = posts.find(p => p.id === Number(postId));
+      if (post) {
+        setActivePost(post);
+      } else {
+        setActivePost(null);
+      }
+    };
+    const handleShowProfile = (e) => {
+      const { user } = e.detail;
+      if (user) {
+        setProfilePopup(user);
+      }
+    };
+    window.addEventListener('community-open-post', handleOpenPost);
+    window.addEventListener('community-show-profile', handleShowProfile);
+    return () => {
+      window.removeEventListener('community-open-post', handleOpenPost);
+      window.removeEventListener('community-show-profile', handleShowProfile);
+    };
+  }, [posts]);
+
+  const handleFileChange = (e, target) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    const newFiles = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' 
+        : (file.size / 1024).toFixed(1) + ' KB',
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      url: URL.createObjectURL(file)
+    }));
+    
+    if (target === 'post') {
+      setNewPostAttachments(prev => [...prev, ...newFiles]);
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => [...prev, ...newFiles]);
+    }
+    // reset input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (id, target) => {
+    if (target === 'post') {
+      setNewPostAttachments(prev => prev.filter(att => att.id !== id));
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => prev.filter(att => att.id !== id));
+    }
+  };
 
   const handlePostSubmit = () => {
-    if (!newPostText.trim()) return;
+    if (!newPostText.trim() && newPostAttachments.length === 0) return;
     const newPost = {
       id: Date.now(),
       author: 'Rahul Agarwal',
@@ -41,28 +167,32 @@ export default function Community() {
       tags: ['#general'],
       badges: [],
       content: newPostText,
+      attachments: newPostAttachments,
       likes: 0,
       comments: 0,
       replies: []
     };
     setPosts([newPost, ...posts]);
     setNewPostText('');
+    setNewPostAttachments([]);
   };
 
   const handleReplySubmit = () => {
-    if (!replyText.trim() || !activePost) return;
+    if ((!replyText.trim() && replyAttachments.length === 0) || !activePost) return;
     const updatedPost = { ...activePost };
     updatedPost.replies.push({
       author: 'Rahul Agarwal',
       avatar: 'RA',
       role: 'student',
       time: 'Just now',
-      content: replyText
+      content: replyText,
+      attachments: replyAttachments
     });
     updatedPost.comments += 1;
     setPosts(posts.map(p => p.id === updatedPost.id ? updatedPost : p));
     setActivePost(updatedPost);
     setReplyText('');
+    setReplyAttachments([]);
   };
 
   const toggleLike = (post) => {
@@ -118,22 +248,92 @@ export default function Community() {
                   onKeyPress={e => e.key === 'Enter' && handlePostSubmit()}
                 />
                 <div className="composer-actions">
-                  <button className="composer-btn" title="Attach file"><span className="material-icons-round">attach_file</span></button>
-                  <button className="composer-btn" title="Add image"><span className="material-icons-round">image</span></button>
-                  <button className="composer-btn" title="Add poll"><span className="material-icons-round">poll</span></button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button className="composer-btn" title="Attach file" onClick={() => fileInputRef.current.click()}>
+                      <span className="material-icons-round">attach_file</span>
+                    </button>
+                    <button className="composer-btn" title="Add image" onClick={() => imageInputRef.current.click()}>
+                      <span className="material-icons-round">image</span>
+                    </button>
+                    <button className="composer-btn" title="Add poll"><span className="material-icons-round">poll</span></button>
+                  </div>
                   <button className="btn-primary btn-sm" onClick={handlePostSubmit}>Post</button>
                 </div>
+                
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileChange(e, 'post')}
+                  multiple
+                />
+                <input 
+                  type="file" 
+                  ref={imageInputRef} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileChange(e, 'post')}
+                  multiple
+                />
+
+                {newPostAttachments.length > 0 && (
+                  <div className="composer-attachments-preview">
+                    {newPostAttachments.map((att) => (
+                      <div key={att.id} className="composer-attachment-item">
+                        {att.type === 'image' ? (
+                          <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                        ) : (
+                          <div className="composer-attachment-icon">
+                            <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                          </div>
+                        )}
+                        <div className="composer-attachment-info">
+                          <span className="composer-attachment-name">{att.name}</span>
+                          <span className="composer-attachment-size">{att.size}</span>
+                        </div>
+                        <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'post')}>
+                          <span className="material-icons-round">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="feed-filters">
-                <button className="filter-chip active">All Posts</button>
-                <button className="filter-chip">Mentor Posts</button>
-                <button className="filter-chip">Trending</button>
-                <button className="filter-chip">Resources</button>
-                <button className="filter-chip">AMA Sessions</button>
+                <button 
+                  className={`filter-chip ${activeFilter === 'All' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('All')}
+                >
+                  All Posts
+                </button>
+                <button 
+                  className={`filter-chip ${activeFilter === 'Mentor Posts' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('Mentor Posts')}
+                >
+                  Mentor Posts
+                </button>
+                <button 
+                  className={`filter-chip ${activeFilter === 'Trending' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('Trending')}
+                >
+                  Trending
+                </button>
+                <button 
+                  className={`filter-chip ${activeFilter === 'Resources' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('Resources')}
+                >
+                  Resources
+                </button>
+                <button 
+                  className={`filter-chip ${activeFilter === 'AMA Sessions' ? 'active' : ''}`}
+                  onClick={() => setActiveFilter('AMA Sessions')}
+                >
+                  AMA Sessions
+                </button>
               </div>
               
               <div className="posts-feed">
-                {posts.map(post => (
+                {getFilteredPosts().length > 0 ? getFilteredPosts().map(post => (
                   <div key={post.id} className="post-card" onClick={() => setActivePost(post)} style={{cursor: 'pointer'}}>
                     <div className="post-header">
                       <div className="post-author-info">
@@ -152,6 +352,7 @@ export default function Community() {
                     <div className="post-content">
                       {post.content.length > 150 ? post.content.substring(0, 150) + '...' : post.content}
                     </div>
+                    {renderAttachments(post.attachments)}
                     <div className="post-tags">
                       {post.tags.map((tag, i) => <span key={i} className="post-tag">{tag}</span>)}
                     </div>
@@ -164,7 +365,12 @@ export default function Community() {
                       </button>
                     </div>
                   </div>
-                ))}
+                )) : (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+                    <span className="material-icons-round" style={{ fontSize: 48, marginBottom: 12, display: 'block', color: 'var(--border)' }}>forum</span>
+                    No posts found matching this category.
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -191,6 +397,7 @@ export default function Community() {
                 <div className="post-content" style={{fontSize: 15}}>
                   {activePost.content}
                 </div>
+                {renderAttachments(activePost.attachments)}
                 <div className="post-tags" style={{marginBottom: 24}}>
                   {activePost.tags.map((tag, i) => <span key={i} className="post-tag">{tag}</span>)}
                 </div>
@@ -216,7 +423,55 @@ export default function Community() {
                   value={replyText}
                   onChange={e => setReplyText(e.target.value)}
                 ></textarea>
-                <div className="reply-actions">
+                
+                <input 
+                  type="file" 
+                  ref={replyFileInputRef} 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileChange(e, 'reply')}
+                  multiple
+                />
+                <input 
+                  type="file" 
+                  ref={replyImageInputRef} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleFileChange(e, 'reply')}
+                  multiple
+                />
+
+                {replyAttachments.length > 0 && (
+                  <div style={{ margin: '0 16px 12px', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                    {replyAttachments.map((att) => (
+                      <div key={att.id} className="composer-attachment-item">
+                        {att.type === 'image' ? (
+                          <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                        ) : (
+                          <div className="composer-attachment-icon">
+                            <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                          </div>
+                        )}
+                        <div className="composer-attachment-info">
+                          <span className="composer-attachment-name">{att.name}</span>
+                          <span className="composer-attachment-size">{att.size}</span>
+                        </div>
+                        <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'reply')}>
+                          <span className="material-icons-round">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="reply-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="composer-btn" title="Attach file" onClick={() => replyFileInputRef.current.click()}>
+                      <span className="material-icons-round" style={{ fontSize: 20 }}>attach_file</span>
+                    </button>
+                    <button className="composer-btn" title="Add image" onClick={() => replyImageInputRef.current.click()}>
+                      <span className="material-icons-round" style={{ fontSize: 20 }}>image</span>
+                    </button>
+                  </div>
                   <button className="btn-primary btn-sm" onClick={handleReplySubmit}>
                     <span className="material-icons-round" style={{fontSize: 16, marginRight: 4}}>send</span> Post Reply
                   </button>
@@ -238,6 +493,7 @@ export default function Community() {
                     </div>
                     <div className="post-content" style={{marginLeft: 44, marginBottom: 0}}>
                       {reply.content}
+                      {renderAttachments(reply.attachments)}
                     </div>
                   </div>
                 )) : (

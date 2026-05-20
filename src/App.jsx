@@ -14,7 +14,7 @@ import Notifications from './pages/Notifications';
 
 export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 

@@ -7,17 +7,28 @@ export default function Sidebar({ activePage, setActivePage, isOpen, setIsOpen }
     { id: 'community', icon: 'forum', label: 'Open Community' },
     { id: 'course', icon: 'school', label: 'Course Community' },
     { id: 'studyrooms', icon: 'groups', label: 'Study Rooms' },
-    { id: 'messages', icon: 'chat', label: 'Messages', badge: 3 },
+    { id: 'messages', icon: 'chat', label: 'Messages' },
     { id: 'profile', icon: 'person', label: 'My Profile' },
     { id: 'referrals', icon: 'workspace_premium', label: 'Referrals' },
     { id: 'leaderboard', icon: 'leaderboard', label: 'Leaderboard' }
   ];
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`} id="sidebar">
-      <div className="sidebar-brand" style={{ flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', padding: '20px 24px', height: 'auto' }}>
-        <div style={{ fontSize: '32px', fontWeight: 800, color: '#2563EB', lineHeight: 1, letterSpacing: '-1.5px', fontFamily: "'Inter', sans-serif" }}>accredian</div>
-        <div style={{ fontSize: '11px', color: '#6B7280', letterSpacing: '1.5px', fontWeight: 500, marginTop: '4px', textTransform: 'lowercase' }}>credentials that matter</div>
+    <aside className={`sidebar ${isOpen ? 'open' : 'collapsed'}`} id="sidebar">
+      <div className="sidebar-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', height: 'auto', borderBottom: '1px solid rgba(255,255,255,0.5)' }}>
+        <div>
+          <div style={{ fontSize: '32px', fontWeight: 800, color: '#2563EB', lineHeight: 1, letterSpacing: '-1.5px', fontFamily: "'Inter', sans-serif" }}>accredian</div>
+          <div style={{ fontSize: '11px', color: '#6B7280', letterSpacing: '1.5px', fontWeight: 500, marginTop: '4px', textTransform: 'lowercase' }}>credentials that matter</div>
+        </div>
+        <button 
+          type="button"
+          className="sidebar-collapse-btn" 
+          onClick={() => setIsOpen(false)}
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '50%', transition: 'background 0.2s' }}
+          title="Collapse Sidebar"
+        >
+          <span className="material-icons-round">chevron_left</span>
+        </button>
       </div>
 
       <nav className="sidebar-nav">

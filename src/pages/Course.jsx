@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { coursePosts as initialPosts, courseResources, courseAnnouncements } from '../courseData';
+import React, { useState, useRef } from 'react';
+import { coursePosts as initialPosts, courseResources, courseAnnouncements, courseModules } from '../courseData';
 import ModuleDiscussionsTab from '../components/ModuleDiscussionsTab';
 
 const courseMentors = [
@@ -19,6 +19,45 @@ const courseStudents = [
   { id: 'cs8', name: 'Siddharth Roy', initials: 'SR', course: 'PGPDSAI', cohort: 'Cohort 42', color: '#0EA5E9', online: true, bio: 'Data storytelling and visualization nerd.', skills: ['Tableau', 'Python', 'D3.js'], isFollowing: false, isFriend: false },
 ];
 
+const renderAttachments = (attachments) => {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div className="post-attachments" onClick={e => e.stopPropagation()}>
+      {attachments.map((att) => {
+        if (att.type === 'image') {
+          return (
+            <img 
+              key={att.id || att.name} 
+              src={att.url} 
+              alt={att.name} 
+              className="post-image-attachment" 
+              onClick={() => window.open(att.url, '_blank')}
+            />
+          );
+        } else {
+          return (
+            <a 
+              key={att.id || att.name} 
+              href={att.url} 
+              download={att.name} 
+              className="post-file-attachment"
+            >
+              <div className="post-file-icon">
+                <span className="material-icons-round">description</span>
+              </div>
+              <div className="post-file-info">
+                <span className="post-file-name">{att.name}</span>
+                <span className="post-file-size">{att.size}</span>
+              </div>
+              <span className="material-icons-round post-file-download-icon">download</span>
+            </a>
+          );
+        }
+      })}
+    </div>
+  );
+};
+
 export default function Course() {
   const [activeTab, setActiveTab] = useState('feed');
   const [posts, setPosts] = useState(initialPosts);
@@ -32,6 +71,45 @@ export default function Course() {
   const [activeModulePost, setActiveModulePost] = useState(null);
   const [moduleReplyText, setModuleReplyText] = useState('');
   const [moduleNewPostText, setModuleNewPostText] = useState('');
+
+  const [newPostAttachments, setNewPostAttachments] = useState([]);
+  const [replyAttachments, setReplyAttachments] = useState([]);
+
+  const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const replyFileInputRef = useRef(null);
+  const replyImageInputRef = useRef(null);
+
+  const handleFileChange = (e, target) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    
+    const newFiles = files.map(file => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: file.size > 1024 * 1024 
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' 
+        : (file.size / 1024).toFixed(1) + ' KB',
+      type: file.type.startsWith('image/') ? 'image' : 'file',
+      url: URL.createObjectURL(file)
+    }));
+    
+    if (target === 'post') {
+      setNewPostAttachments(prev => [...prev, ...newFiles]);
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => [...prev, ...newFiles]);
+    }
+    // reset input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (id, target) => {
+    if (target === 'post') {
+      setNewPostAttachments(prev => prev.filter(att => att.id !== id));
+    } else if (target === 'reply') {
+      setReplyAttachments(prev => prev.filter(att => att.id !== id));
+    }
+  };
 
   const openModule = (mod) => {
     setActiveModule(mod);
@@ -48,6 +126,55 @@ export default function Course() {
     setModuleNewPostText('');
   };
 
+  React.useEffect(() => {
+    const handleOpenPost = (e) => {
+      const { tab, postId, moduleId, modulePostId } = e.detail;
+      if (tab) {
+        setActiveTab(tab);
+      }
+      if (postId) {
+        const post = posts.find(p => p.id === Number(postId));
+        if (post) {
+          setActivePost(post);
+        } else {
+          setActivePost(null);
+        }
+      } else {
+        setActivePost(null);
+      }
+      if (moduleId) {
+        const mod = courseModules.find(m => m.id === Number(moduleId));
+        if (mod) {
+          // Instead of openModule local variable TDZ, we duplicate simple state changes or call it here
+          setActiveModule(mod);
+          setModuleDiscussions(mod.discussionsList.map((d) => ({ ...d })));
+          setActiveModulePost(null);
+          setModuleReplyText('');
+          setModuleNewPostText('');
+          
+          if (modulePostId) {
+            const mPost = mod.discussionsList.find(p => p.id === Number(modulePostId));
+            if (mPost) {
+              setActiveModulePost(mPost);
+            }
+          }
+        }
+      }
+    };
+    const handleShowProfile = (e) => {
+      const { user } = e.detail;
+      if (user) {
+        setProfilePopup({ ...user, type: 'mentor' });
+      }
+    };
+    window.addEventListener('course-open-post', handleOpenPost);
+    window.addEventListener('course-show-profile', handleShowProfile);
+    return () => {
+      window.removeEventListener('course-open-post', handleOpenPost);
+      window.removeEventListener('course-show-profile', handleShowProfile);
+    };
+  }, [posts]);
+
   const switchTab = (tab) => {
     setActiveTab(tab);
     setActivePost(null);
@@ -55,19 +182,21 @@ export default function Course() {
   };
 
   const handlePostSubmit = () => {
-    if (!newPostText.trim()) return;
-    setPosts([{ id: Date.now(), author: 'Rahul Agarwal', avatar: 'RA', role: 'student', time: 'Just now', title: 'New Course Discussion', tags: ['#general', '#pgp-ds-ai'], badges: [], content: newPostText, likes: 0, comments: 0, replies: [] }, ...posts]);
+    if (!newPostText.trim() && newPostAttachments.length === 0) return;
+    setPosts([{ id: Date.now(), author: 'Rahul Agarwal', avatar: 'RA', role: 'student', time: 'Just now', title: 'New Course Discussion', tags: ['#general', '#pgp-ds-ai'], badges: [], content: newPostText, attachments: newPostAttachments, likes: 0, comments: 0, replies: [] }, ...posts]);
     setNewPostText('');
+    setNewPostAttachments([]);
   };
 
   const handleReplySubmit = () => {
-    if (!replyText.trim() || !activePost) return;
+    if ((!replyText.trim() && replyAttachments.length === 0) || !activePost) return;
     const updatedPost = { ...activePost };
-    updatedPost.replies.push({ author: 'Rahul Agarwal', avatar: 'RA', role: 'student', time: 'Just now', content: replyText });
+    updatedPost.replies.push({ author: 'Rahul Agarwal', avatar: 'RA', role: 'student', time: 'Just now', content: replyText, attachments: replyAttachments });
     updatedPost.comments += 1;
     setPosts(posts.map(p => p.id === updatedPost.id ? updatedPost : p));
     setActivePost(updatedPost);
     setReplyText('');
+    setReplyAttachments([]);
   };
 
   const toggleLike = (post) => {
@@ -82,8 +211,8 @@ export default function Course() {
     if (activeModulePost && activeModulePost.id === updatedPost.id) setActiveModulePost(updatedPost);
   };
 
-  const handleModuleReplySubmit = () => {
-    if (!moduleReplyText.trim() || !activeModulePost) return;
+  const handleModuleReplySubmit = (attachments = []) => {
+    if ((!moduleReplyText.trim() && attachments.length === 0) || !activeModulePost) return;
     const updatedPost = { ...activeModulePost };
     updatedPost.replies.push({
       author: 'Rahul Agarwal',
@@ -91,6 +220,7 @@ export default function Course() {
       role: 'student',
       time: 'Just now',
       content: moduleReplyText,
+      attachments: attachments
     });
     updatedPost.comments += 1;
     setModuleDiscussions(moduleDiscussions.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
@@ -98,8 +228,9 @@ export default function Course() {
     setModuleReplyText('');
   };
 
-  const handleModulePostSubmit = () => {
-    if (!moduleNewPostText.trim() || !activeModule) return;
+  const handleModulePostSubmit = (attachments = []) => {
+    if (!moduleNewPostText.trim() && attachments.length === 0) return;
+    if (!activeModule) return;
     const newPost = {
       id: Date.now(),
       author: 'Rahul Agarwal',
@@ -110,6 +241,7 @@ export default function Course() {
       tags: [`#module${activeModule.id}`, '#discussion'],
       badges: [],
       content: moduleNewPostText,
+      attachments: attachments,
       likes: 0,
       comments: 0,
       replies: [],
@@ -157,6 +289,7 @@ export default function Course() {
       </div>
       {!isDetail && <div className="post-title-row">{post.title}</div>}
       <div className="post-content" style={isDetail?{fontSize:15}:undefined}>{isDetail ? post.content : (post.content.length>150 ? post.content.substring(0,150)+'...' : post.content)}</div>
+      {renderAttachments(post.attachments)}
       <div className="post-tags" style={isDetail?{marginBottom:24}:undefined}>{post.tags.map((t,i) => <span key={i} className="post-tag">{t}</span>)}</div>
       <div className="post-actions" onClick={e=>e.stopPropagation()} style={isDetail?{borderTop:'1px solid var(--border)',paddingTop:16}:undefined}>
         <button className={`post-action ${post.isLiked?'active':''}`} onClick={()=>like(post)}>
@@ -194,11 +327,56 @@ export default function Course() {
                     <div className="composer-avatar">RA</div>
                     <input type="text" placeholder="Start a discussion, ask a question, or share a resource..." value={newPostText} onChange={e=>setNewPostText(e.target.value)} onKeyPress={e=>e.key==='Enter'&&handlePostSubmit()} />
                     <div className="composer-actions">
-                      <button className="composer-btn" title="Attach"><span className="material-icons-round">attach_file</span></button>
-                      <button className="composer-btn" title="Image"><span className="material-icons-round">image</span></button>
-                      <button className="composer-btn" title="Poll"><span className="material-icons-round">poll</span></button>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button className="composer-btn" title="Attach file" onClick={() => fileInputRef.current.click()}>
+                          <span className="material-icons-round">attach_file</span>
+                        </button>
+                        <button className="composer-btn" title="Add image" onClick={() => imageInputRef.current.click()}>
+                          <span className="material-icons-round">image</span>
+                        </button>
+                        <button className="composer-btn" title="Poll"><span className="material-icons-round">poll</span></button>
+                      </div>
                       <button className="btn-primary btn-sm" onClick={handlePostSubmit}>Post</button>
                     </div>
+
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => handleFileChange(e, 'post')}
+                      multiple
+                    />
+                    <input 
+                      type="file" 
+                      ref={imageInputRef} 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => handleFileChange(e, 'post')}
+                      multiple
+                    />
+
+                    {newPostAttachments.length > 0 && (
+                      <div className="composer-attachments-preview">
+                        {newPostAttachments.map((att) => (
+                          <div key={att.id} className="composer-attachment-item">
+                            {att.type === 'image' ? (
+                              <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                            ) : (
+                              <div className="composer-attachment-icon">
+                                <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                              </div>
+                            )}
+                            <div className="composer-attachment-info">
+                              <span className="composer-attachment-name">{att.name}</span>
+                              <span className="composer-attachment-size">{att.size}</span>
+                            </div>
+                            <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'post')}>
+                              <span className="material-icons-round">close</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="posts-feed">{posts.map(p => <div key={p.id}>{renderPostCard(p)}</div>)}</div>
                 </div>
@@ -207,11 +385,65 @@ export default function Course() {
                   <button className="back-btn" onClick={()=>setActivePost(null)}><span className="material-icons-round">arrow_back</span> Back to posts</button>
                   {renderPostCard(activePost, true)}
                   <div className="replies-header"><h4>{activePost.replies.length} Replies</h4></div>
+                  
                   <div className="reply-composer">
                     <div className="reply-composer-title">Add a reply</div>
                     <textarea placeholder="Share your thoughts..." className="reply-textarea" value={replyText} onChange={e=>setReplyText(e.target.value)}></textarea>
-                    <div className="reply-actions"><button className="btn-primary btn-sm" onClick={handleReplySubmit}><span className="material-icons-round" style={{fontSize:16,marginRight:4}}>send</span> Post Reply</button></div>
+                    
+                    <input 
+                      type="file" 
+                      ref={replyFileInputRef} 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => handleFileChange(e, 'reply')}
+                      multiple
+                    />
+                    <input 
+                      type="file" 
+                      ref={replyImageInputRef} 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={(e) => handleFileChange(e, 'reply')}
+                      multiple
+                    />
+
+                    {replyAttachments.length > 0 && (
+                      <div style={{ margin: '0 16px 12px', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                        {replyAttachments.map((att) => (
+                          <div key={att.id} className="composer-attachment-item">
+                            {att.type === 'image' ? (
+                              <img src={att.url} alt={att.name} className="composer-attachment-img" />
+                            ) : (
+                              <div className="composer-attachment-icon">
+                                <span className="material-icons-round" style={{ fontSize: 18 }}>description</span>
+                              </div>
+                            )}
+                            <div className="composer-attachment-info">
+                              <span className="composer-attachment-name">{att.name}</span>
+                              <span className="composer-attachment-size">{att.size}</span>
+                            </div>
+                            <button className="composer-attachment-remove" onClick={() => removeAttachment(att.id, 'reply')}>
+                              <span className="material-icons-round">close</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="reply-actions" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button className="composer-btn" title="Attach file" onClick={() => replyFileInputRef.current.click()}>
+                          <span className="material-icons-round" style={{ fontSize: 20 }}>attach_file</span>
+                        </button>
+                        <button className="composer-btn" title="Add image" onClick={() => replyImageInputRef.current.click()}>
+                          <span className="material-icons-round" style={{ fontSize: 20 }}>image</span>
+                        </button>
+                      </div>
+                      <button className="btn-primary btn-sm" onClick={handleReplySubmit}>
+                        <span className="material-icons-round" style={{fontSize:16,marginRight:4}}>send</span> Post Reply
+                      </button>
+                    </div>
                   </div>
+                  
                   <div className="replies-list">
                     {activePost.replies.length > 0 ? activePost.replies.map((r,i) => (
                       <div key={i} className="reply-item">
@@ -219,7 +451,10 @@ export default function Course() {
                           <div className="post-avatar" style={{width:32,height:32,fontSize:12,background:r.role==='mentor'?'#2563EB':'var(--primary-light)'}}>{r.avatar}</div>
                           <div><span className="post-name" style={{fontSize:14}}>{r.author} <span style={{fontWeight:400,color:'var(--text-muted)'}}>· {r.time}</span></span></div>
                         </div>
-                        <div className="post-content" style={{marginLeft:44,marginBottom:0}}>{r.content}</div>
+                        <div className="post-content" style={{marginLeft:44,marginBottom:0}}>
+                          {r.content}
+                          {renderAttachments(r.attachments)}
+                        </div>
                       </div>
                     )) : <div style={{color:'var(--text-muted)',padding:'20px 0'}}>No replies yet. Be the first!</div>}
                   </div>
