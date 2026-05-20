@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import AIFloatingAssistant from './components/AIFloatingAssistant';
 import Dashboard from './pages/Dashboard';
 import Community from './pages/Community';
 import Course from './pages/Course';
@@ -43,6 +44,7 @@ export default function App() {
       <main className="main-content" id="mainContent">
         <Topbar toggleSidebar={toggleSidebar} setActivePage={setActivePage} />
         {renderPage()}
+        <AIFloatingAssistant />
       </main>
     </>
   );

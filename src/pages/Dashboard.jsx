@@ -1,4 +1,5 @@
 import React from 'react';
+import { PROFILE_AVATAR } from '../aiAssistantData';
 
 export default function Dashboard() {
   return (
@@ -9,7 +10,7 @@ export default function Dashboard() {
       <div className="summary-card" id="summaryCard">
         <div className="summary-left">
           <div className="summary-avatar">
-            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect fill='%234F6AF6' width='80' height='80' rx='40'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-family='Inter' font-size='32' font-weight='700'%3ERA%3C/text%3E%3C/svg%3E" alt="Avatar" />
+            <img src={PROFILE_AVATAR} alt="Rahul Agarwal" />
             <div className="online-dot"></div>
           </div>
           <div className="summary-info">
@@ -18,7 +19,6 @@ export default function Dashboard() {
             <p className="summary-cohort">Cohort 42 · Batch Jan 2026</p>
             <div className="summary-badges-row">
               <span className="badge-pill badge-contributor"><span className="material-icons-round">emoji_events</span> Top Contributor</span>
-              <span className="badge-pill badge-streak"><span className="material-icons-round">local_fire_department</span> 12 Day Streak</span>
             </div>
           </div>
         </div>

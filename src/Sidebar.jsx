@@ -1,4 +1,5 @@
 import React from 'react';
+import { PROFILE_AVATAR } from './aiAssistantData';
 
 export default function Sidebar({ activePage, setActivePage, isOpen, setIsOpen }) {
   const navItems = [
@@ -39,10 +40,21 @@ export default function Sidebar({ activePage, setActivePage, isOpen, setIsOpen }
       </nav>
 
       <div className="sidebar-footer">
-        <div className="streak-mini">
-          <span className="material-icons-round">local_fire_department</span>
-          <span>12 Day Streak</span>
-        </div>
+        <button
+          type="button"
+          className="sidebar-profile-mini"
+          onClick={() => {
+            setActivePage('profile');
+            if (window.innerWidth <= 768) setIsOpen(false);
+          }}
+        >
+          <img src={PROFILE_AVATAR} alt="Rahul Agarwal" className="sidebar-profile-avatar" />
+          <div className="sidebar-profile-info">
+            <span className="sidebar-profile-name">Rahul Agarwal</span>
+            <span className="sidebar-profile-meta">View profile</span>
+          </div>
+          <span className="material-icons-round sidebar-profile-chevron">chevron_right</span>
+        </button>
       </div>
     </aside>
   );

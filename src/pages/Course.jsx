@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { coursePosts as initialPosts, courseModules, courseResources, courseAnnouncements } from '../courseData';
+import { coursePosts as initialPosts, courseResources, courseAnnouncements } from '../courseData';
+import ModuleDiscussionsTab from '../components/ModuleDiscussionsTab';
 
 const courseMentors = [
   { id: 'cm1', name: 'Dr. Priya Sharma', initials: 'PS', role: 'ML & AI Lead', course: 'PGPDSAI', color: '#8B5CF6', online: true, bio: 'Expert in deep learning and NLP. 10+ years at Google and Microsoft Research.', skills: ['Deep Learning', 'NLP', 'TensorFlow', 'Research'] },
@@ -26,6 +27,32 @@ export default function Course() {
   const [replyText, setReplyText] = useState('');
   const [profilePopup, setProfilePopup] = useState(null);
   const [students, setStudents] = useState(courseStudents);
+  const [activeModule, setActiveModule] = useState(null);
+  const [moduleDiscussions, setModuleDiscussions] = useState([]);
+  const [activeModulePost, setActiveModulePost] = useState(null);
+  const [moduleReplyText, setModuleReplyText] = useState('');
+  const [moduleNewPostText, setModuleNewPostText] = useState('');
+
+  const openModule = (mod) => {
+    setActiveModule(mod);
+    setModuleDiscussions(mod.discussionsList.map((d) => ({ ...d })));
+    setActiveModulePost(null);
+    setModuleReplyText('');
+    setModuleNewPostText('');
+  };
+
+  const closeModule = () => {
+    setActiveModule(null);
+    setActiveModulePost(null);
+    setModuleReplyText('');
+    setModuleNewPostText('');
+  };
+
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setActivePost(null);
+    if (tab !== 'modules') closeModule();
+  };
 
   const handlePostSubmit = () => {
     if (!newPostText.trim()) return;
@@ -49,6 +76,54 @@ export default function Course() {
     if (activePost && activePost.id === updatedPost.id) setActivePost(updatedPost);
   };
 
+  const toggleModuleLike = (post) => {
+    const updatedPost = { ...post, likes: post.isLiked ? post.likes - 1 : post.likes + 1, isLiked: !post.isLiked };
+    setModuleDiscussions(moduleDiscussions.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
+    if (activeModulePost && activeModulePost.id === updatedPost.id) setActiveModulePost(updatedPost);
+  };
+
+  const handleModuleReplySubmit = () => {
+    if (!moduleReplyText.trim() || !activeModulePost) return;
+    const updatedPost = { ...activeModulePost };
+    updatedPost.replies.push({
+      author: 'Rahul Agarwal',
+      avatar: 'RA',
+      role: 'student',
+      time: 'Just now',
+      content: moduleReplyText,
+    });
+    updatedPost.comments += 1;
+    setModuleDiscussions(moduleDiscussions.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
+    setActiveModulePost(updatedPost);
+    setModuleReplyText('');
+  };
+
+  const handleModulePostSubmit = () => {
+    if (!moduleNewPostText.trim() || !activeModule) return;
+    const newPost = {
+      id: Date.now(),
+      author: 'Rahul Agarwal',
+      avatar: 'RA',
+      role: 'student',
+      time: 'Just now',
+      title: `New discussion in ${activeModule.shortTitle}`,
+      tags: [`#module${activeModule.id}`, '#discussion'],
+      badges: [],
+      content: moduleNewPostText,
+      likes: 0,
+      comments: 0,
+      replies: [],
+    };
+    setModuleDiscussions([newPost, ...moduleDiscussions]);
+    setModuleNewPostText('');
+  };
+
+  const statusClass = (status) => {
+    if (status === 'In Progress') return 'in-progress';
+    if (status === 'Upcoming') return 'upcoming';
+    return 'locked';
+  };
+
   const openProfile = (person, type) => setProfilePopup({ ...person, type });
   const closeProfile = () => setProfilePopup(null);
 
@@ -62,8 +137,12 @@ export default function Course() {
     if (profilePopup && profilePopup.id === id) setProfilePopup(p => ({ ...p, isFriend: !p.isFriend }));
   };
 
-  const renderPostCard = (post, isDetail = false) => (
-    <div className={`post-card ${isDetail ? 'detail-card' : ''}`} onClick={!isDetail ? () => setActivePost(post) : undefined} style={!isDetail ? {cursor:'pointer'} : undefined}>
+  const renderPostCard = (post, isDetail = false, { onOpen, onLike, onComment } = {}) => {
+    const open = onOpen || (() => setActivePost(post));
+    const like = onLike || (() => toggleLike(post));
+    const comment = onComment || (() => open(post));
+    return (
+    <div className={`post-card ${isDetail ? 'detail-card' : ''}`} onClick={!isDetail ? () => open(post) : undefined} style={!isDetail ? {cursor:'pointer'} : undefined}>
       <div className="post-header" style={isDetail ? {marginBottom:16} : undefined}>
         <div className="post-author-info">
           <div className="post-avatar" style={{background: post.role==='mentor'?'#2563EB':post.role==='alumni'?'#F59E0B':'var(--primary-light)', ...(isDetail?{width:48,height:48,fontSize:18}:{})}}>{post.avatar}</div>
@@ -80,15 +159,16 @@ export default function Course() {
       <div className="post-content" style={isDetail?{fontSize:15}:undefined}>{isDetail ? post.content : (post.content.length>150 ? post.content.substring(0,150)+'...' : post.content)}</div>
       <div className="post-tags" style={isDetail?{marginBottom:24}:undefined}>{post.tags.map((t,i) => <span key={i} className="post-tag">{t}</span>)}</div>
       <div className="post-actions" onClick={e=>e.stopPropagation()} style={isDetail?{borderTop:'1px solid var(--border)',paddingTop:16}:undefined}>
-        <button className={`post-action ${post.isLiked?'active':''}`} onClick={()=>toggleLike(post)}>
+        <button className={`post-action ${post.isLiked?'active':''}`} onClick={()=>like(post)}>
           <span className="material-icons-round" style={{fontSize:isDetail?20:18}}>{post.isLiked?'thumb_up':'thumb_up_off_alt'}</span> {post.likes} Likes
         </button>
-        <button className={`post-action ${isDetail?'active':''}`} onClick={()=>setActivePost(post)}>
+        <button className={`post-action ${isDetail?'active':''}`} onClick={()=>comment(post)}>
           <span className="material-icons-round" style={{fontSize:isDetail?20:18}}>chat_bubble_outline</span> {post.comments} Replies
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <section className="page active" id="page-course">
@@ -98,10 +178,10 @@ export default function Course() {
       </div>
 
       <div className="course-tabs">
-        <button className={`course-tab ${activeTab==='feed'?'active':''}`} onClick={()=>{setActiveTab('feed');setActivePost(null);}}>Course Feed</button>
-        <button className={`course-tab ${activeTab==='modules'?'active':''}`} onClick={()=>setActiveTab('modules')}>Module Discussions</button>
-        <button className={`course-tab ${activeTab==='resources'?'active':''}`} onClick={()=>setActiveTab('resources')}>Resource Library</button>
-        <button className={`course-tab ${activeTab==='announcements'?'active':''}`} onClick={()=>setActiveTab('announcements')}>Announcements</button>
+        <button className={`course-tab ${activeTab==='feed'?'active':''}`} onClick={()=>switchTab('feed')}>Course Feed</button>
+        <button className={`course-tab ${activeTab==='modules'?'active':''}`} onClick={()=>switchTab('modules')}>Module Discussions</button>
+        <button className={`course-tab ${activeTab==='resources'?'active':''}`} onClick={()=>switchTab('resources')}>Resource Library</button>
+        <button className={`course-tab ${activeTab==='announcements'?'active':''}`} onClick={()=>switchTab('announcements')}>Announcements</button>
       </div>
 
       <div className="community-layout">
@@ -150,22 +230,23 @@ export default function Course() {
 
           {activeTab === 'modules' && (
             <div className="course-tab-content active" id="tab-modules">
-              <div className="module-list">
-                {courseModules.map(mod => (
-                  <div key={mod.id} className="module-item">
-                    <div className="module-header">
-                      <div>
-                        <div className="module-title"><span className="material-icons-round" style={{color:'var(--primary)'}}>{mod.icon}</span> {mod.title}</div>
-                        <div className="module-meta">
-                          <span><span className="material-icons-round" style={{fontSize:14,verticalAlign:'middle'}}>description</span> {mod.resources} Resources</span>
-                          <span><span className="material-icons-round" style={{fontSize:14,verticalAlign:'middle'}}>forum</span> {mod.discussions} Discussions</span>
-                        </div>
-                      </div>
-                      <span className="material-icons-round" style={{color:'var(--text-muted)'}}>chevron_right</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <ModuleDiscussionsTab
+                activeModule={activeModule}
+                activeModulePost={activeModulePost}
+                moduleDiscussions={moduleDiscussions}
+                moduleNewPostText={moduleNewPostText}
+                moduleReplyText={moduleReplyText}
+                openModule={openModule}
+                closeModule={closeModule}
+                setActiveModulePost={setActiveModulePost}
+                setModuleNewPostText={setModuleNewPostText}
+                setModuleReplyText={setModuleReplyText}
+                handleModulePostSubmit={handleModulePostSubmit}
+                handleModuleReplySubmit={handleModuleReplySubmit}
+                toggleModuleLike={toggleModuleLike}
+                renderPostCard={renderPostCard}
+                statusClass={statusClass}
+              />
             </div>
           )}
 
